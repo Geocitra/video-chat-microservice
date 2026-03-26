@@ -1,86 +1,57 @@
 import { useState } from 'react';
-import { LiveKitRoom, VideoConference } from '@livekit/components-react';
+import { LiveKitRoom, RoomAudioRenderer } from '@livekit/components-react';
+import { useUrlParams } from './hooks/useUrlParams';
+import { PreJoinScreen } from './components/overlays/PreJoinScreen';
+import { RoomLayout } from './layouts/RoomLayout';
+import { Toolbar } from './components/controls/Toolbar';
 import '@livekit/components-styles';
 
-export default function App() {
-    const [token, setToken] = useState<string | null>(null);
+function App() {
+    const { token, livekitUrl, isValid } = useUrlParams();
+    const [hasJoined, setHasJoined] = useState(false);
 
-    // --- KONFIGURASI URL DEV TUNNELS ---
-    // Gunakan URL yang kamu dapatkan dari VS Code tadi
-    const BACKEND_TUNNEL_URL = "https://lft3zq8l-5000.asse.devtunnels.ms";
-    const LIVEKIT_TUNNEL_URL = "wss://lft3zq8l-7880.asse.devtunnels.ms";
-    // Catatan: Port 7880 wajib pakai wss:// (WebSocket Secure) agar bisa jalan di Tunnel
-
-    const handleJoin = async () => {
-        try {
-            // 1. Buat ID Random agar tidak bentrok (Saling tendang)
-            const randomId = 'user-' + Math.floor(Math.random() * 1000);
-
-            // 2. Minta Token ke Backend Manager (Port 5000)
-            console.log("Meminta token ke:", BACKEND_TUNNEL_URL);
-            const response = await fetch(`${BACKEND_TUNNEL_URL}/get-token?room=kelas-fisika&user=${randomId}`);
-
-            if (!response.ok) throw new Error("Gagal mengambil token");
-
-            const data = await response.json();
-            setToken(data.token);
-            console.log("Token berhasil didapat!");
-        } catch (e) {
-            console.error(e);
-            alert("Gagal konek ke Backend! Pastikan tab Ports di VS Code Backend sudah PUBLIC.");
-        }
-    };
-
-    // TAMPILAN SEBELUM JOIN (TOMBOL)
-    if (!token) {
+    // State 1: Parameter tidak valid (Mencegah blank screen jika token hilang)
+    if (!isValid) {
         return (
-            <div style={{
-                display: 'grid',
-                placeItems: 'center',
-                height: '100vh',
-                backgroundColor: '#111',
-                color: 'white',
-                fontFamily: 'sans-serif'
-            }}>
-                <div style={{ textAlign: 'center', padding: '20px', border: '1px solid #333', borderRadius: '12px' }}>
-                    <h1 style={{ marginBottom: '20px' }}>Video Microservice</h1>
-                    <button
-                        onClick={handleJoin}
-                        style={{
-                            padding: '12px 24px',
-                            backgroundColor: '#007bff',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '6px',
-                            cursor: 'pointer',
-                            fontSize: '16px',
-                            fontWeight: 'bold'
-                        }}
-                    >
-                        Join Meeting
-                    </button>
-                    <p style={{ marginTop: '15px', fontSize: '12px', color: '#666' }}>
-                        Testing via VS Code Dev Tunnels
+            <div className="flex h-screen items-center justify-center bg-background text-textHighlight">
+                <div className="max-w-md rounded-lg border border-red-500 bg-surface p-6 text-center">
+                    <h2 className="mb-2 text-xl font-bold text-red-500">Akses Ditolak</h2>
+                    <p className="text-sm text-gray-300">
+                        Token otorisasi atau URL server tidak ditemukan.
                     </p>
                 </div>
             </div>
         );
     }
 
-    // TAMPILAN SAAT VIDEO AKTIF
+    if (!hasJoined) {
+        return <PreJoinScreen onJoin={() => setHasJoined(true)} />;
+    }
+
+    // State 3: Active WebRTC Session
     return (
-        <div style={{ height: '100vh', width: '100vw' }}>
-            <LiveKitRoom
-                video={true}
-                audio={true}
-                token={token}
-                serverUrl={LIVEKIT_TUNNEL_URL} // Menggunakan URL Port 7880 (wss://)
-                onDisconnected={() => setToken(null)}
-                data-lk-theme="default"
-            >
-                {/* UI Standar LiveKit: Grid Video, Tombol Mute, Leave, dll */}
-                <VideoConference />
-            </LiveKitRoom>
-        </div>
+        <LiveKitRoom
+            video={true}
+            audio={true}
+            token={token!}
+            serverUrl={livekitUrl!}
+            connect={true}
+            className="relative flex h-screen w-full flex-col overflow-hidden bg-background"
+        >
+            {/* The Smart Grid */}
+            <RoomLayout />
+
+            {/* Kontrol Media Melayang (Floating Toolbar) */}
+            <div className="absolute bottom-6 left-0 right-0 flex justify-center w-full px-4 pointer-events-none">
+                {/* pointer-events-auto dipasang di dalam elemen agar area di luar toolbar tetap bisa di-klik (tidak menghalangi grid) */}
+                <div className="pointer-events-auto">
+                    <Toolbar />
+                </div>
+            </div>
+
+            <RoomAudioRenderer />
+        </LiveKitRoom>
     );
 }
+
+export default App;

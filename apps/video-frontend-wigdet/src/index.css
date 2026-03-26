@@ -1,16 +1,52 @@
+/* ==========================================
+   TAILWIND DIRECTIVES
+   ========================================== */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-html,
-body,
-#root {
-    height: 100%;
-    width: 100%;
-    margin: 0;
-    padding: 0;
-    background-color: #111111;
-    color: white;
-    overflow: hidden;
-    font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+/* ==========================================
+   THEME VARIABLES CONTRACT (WHITE-LABELING)
+   ========================================== */
+:root {
+  /* Warna default jika Aplikasi Utama tidak mengirimkan parameter tema */
+  --theme-primary: #2563EB;
+  /* Blue 600 */
+  --theme-secondary: #1E40AF;
+  /* Blue 800 */
+  --theme-background: #111827;
+  /* Gray 900 (Latar belakang utama) */
+  --theme-surface: #1F2937;
+  /* Gray 800 (Latar belakang card/kontainer) */
+  --theme-text: #FFFFFF;
+  /* Putih absolut untuk visibilitas maksimal */
+}
+
+/* ==========================================
+   GLOBAL RESET & IFRAME OPTIMIZATION
+   ========================================== */
+body {
+  /* Memastikan background root selalu terisi warna tema untuk mencegah 'flash white' 
+     saat Iframe pertama kali dimuat oleh browser. */
+  background-color: var(--theme-background);
+  color: var(--theme-text);
+  margin: 0;
+  padding: 0;
+
+  /* PENTING UNTUK WIDGET: 
+     Mencegah munculnya scrollbar ganda (satu dari Iframe, satu dari aplikasi parent) */
+  overflow: hidden;
+
+  /* Optimasi render teks pada engine browser modern */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Menghapus outline biru bawaan browser saat tombol diklik (meningkatkan estetika UI) */
+button {
+  outline: none;
+}
+
+button:focus-visible {
+  box-shadow: 0 0 0 2px var(--theme-primary);
 }
